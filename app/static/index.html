@@ -1,0 +1,242 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VoiceCommerce AI</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, sans-serif;
+      background: #f5f7fb;
+      color: #172033;
+    }
+    header {
+      background: #172033;
+      color: white;
+      padding: 24px;
+    }
+    header div, main { max-width: 960px; margin: auto; }
+    header h1 { margin: 0 0 6px; font-size: 26px; }
+    header p { margin: 0; color: #cbd5e1; }
+    main { padding: 24px 16px 48px; }
+    .intro { margin-bottom: 20px; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+    }
+    .card {
+      background: white;
+      border: 1px solid #e1e6ef;
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: 0 3px 12px #1720330a;
+    }
+    h2 { font-size: 18px; margin: 0 0 8px; }
+    .desc { color: #657087; font-size: 14px; min-height: 40px; }
+    label { display: block; font-size: 13px; margin: 14px 0 6px; }
+    input, select, textarea, button {
+      width: 100%;
+      padding: 11px 12px;
+      border-radius: 8px;
+      font: inherit;
+    }
+    input, select, textarea {
+      border: 1px solid #cbd5e1;
+      background: white;
+      color: #172033;
+    }
+    textarea { resize: vertical; min-height: 78px; }
+    button {
+      border: 0;
+      background: #4f46e5;
+      color: white;
+      cursor: pointer;
+      margin-top: 12px;
+      font-weight: 600;
+    }
+    button:hover { background: #4338ca; }
+    button:disabled { opacity: .6; cursor: wait; }
+    .result {
+      margin-top: 14px;
+      padding: 12px;
+      background: #f1f5f9;
+      border-radius: 8px;
+      font-size: 14px;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+    .result:empty { display: none; }
+    .note { color: #657087; font-size: 12px; margin-top: 22px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>VoiceCommerce AI</h1>
+      <p>An AI commerce support agent · India-first prototype</p>
+    </div>
+  </header>
+
+  <main>
+    <div class="intro">
+      <h2>How can we help you today?</h2>
+      <p class="desc">
+        Explore order tracking, cancellation and human support
+        using fictional sample orders.
+      </p>
+    </div>
+
+    <section class="grid">
+      <article class="card">
+        <h2>📦 Track an order</h2>
+        <p class="desc">Check order status and estimated delivery.</p>
+        <label for="track-id">Order ID</label>
+        <input id="track-id" value="VC1002" autocomplete="off">
+        <button onclick="trackOrder()">Track order</button>
+        <div class="result" id="track-result" role="status"></div>
+      </article>
+
+      <article class="card">
+        <h2>↩️ Cancel an order</h2>
+        <p class="desc">Check eligibility before confirming cancellation.</p>
+        <label for="cancel-id">Order ID</label>
+        <input id="cancel-id" value="VC1002" autocomplete="off">
+        <button onclick="checkCancellation()">Check eligibility</button>
+        <div class="result" id="cancel-result" role="status"></div>
+        <button id="confirm-cancel" hidden onclick="confirmCancellation()">
+          Confirm cancellation
+        </button>
+      </article>
+
+      <article class="card">
+        <h2>🎧 Human support</h2>
+        <p class="desc">Create a sample ticket for an unresolved issue.</p>
+        <label for="support-id">Order ID</label>
+        <input id="support-id" value="VC1002" autocomplete="off">
+        <label for="reason">Reason</label>
+        <select id="reason">
+          <option value="refund_dispute">Refund dispute</option>
+          <option value="delivery_issue">Delivery issue</option>
+          <option value="other">Other</option>
+        </select>
+        <label for="message">How can we help?</label>
+        <textarea id="message">I need help with my order.</textarea>
+        <button onclick="createTicket()">Request support</button>
+        <div class="result" id="support-result" role="status"></div>
+      </article>
+    </section>
+
+    <p class="note">
+      Portfolio prototype using fictional data. Support tickets are samples;
+      no real support team is contacted. Not a production commerce system.
+    </p>
+  </main>
+
+  <script>
+    const $ = id => document.getElementById(id);
+
+    async function request(url, options = {}) {
+      const response = await fetch(url, options);
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.detail || "Request failed");
+      }
+      return data;
+    }
+
+    function show(id, value) {
+      $(id).textContent = typeof value === "string"
+        ? value : JSON.stringify(value, null, 2);
+    }
+
+    async function trackOrder() {
+      show("track-result", "Loading...");
+      try {
+        const id = $("track-id").value.trim();
+        if (!id) throw new Error("Enter an order ID.");
+        const order = await request(
+          `/orders/${encodeURIComponent(id)}`
+        );
+        show("track-result",
+          `Order: ${order.order_id}\n` +
+          `Status: ${order.status}\n` +
+          `Item: ${order.item}\n` +
+          `Estimated delivery: ${order.estimated_delivery}`
+        );
+      } catch (error) {
+        show("track-result", `Could not track order: ${error.message}`);
+      }
+    }
+
+    let pendingCancellation = null;
+
+    async function checkCancellation() {
+      $("confirm-cancel").hidden = true;
+      pendingCancellation = null;
+      show("cancel-result", "Checking eligibility...");
+      try {
+        const id = $("cancel-id").value.trim();
+        if (!id) throw new Error("Enter an order ID.");
+        const result = await request(
+          `/orders/${encodeURIComponent(id)}/cancel?confirmed=false`,
+          { method: "POST" }
+        );
+        show("cancel-result", result.message);
+        if (result.confirmation_required) {
+          pendingCancellation = id;
+          $("confirm-cancel").hidden = false;
+        }
+      } catch (error) {
+        show("cancel-result", `Cancellation check failed: ${error.message}`);
+      }
+    }
+
+    async function confirmCancellation() {
+      if (!pendingCancellation) return;
+      if (!window.confirm("Are you sure you want to cancel this order?")) {
+        return;
+      }
+
+      const id = pendingCancellation;
+      $("confirm-cancel").hidden = true;
+      pendingCancellation = null;
+      show("cancel-result", "Processing cancellation...");
+
+      try {
+        const result = await request(
+          `/orders/${encodeURIComponent(id)}/cancel?confirmed=true`,
+          { method: "POST" }
+        );
+        show("cancel-result", result.message);
+      } catch (error) {
+        show("cancel-result", `Cancellation failed: ${error.message}`);
+      }
+    }
+
+    async function createTicket() {
+      show("support-result", "Creating sample ticket...");
+      try {
+        const result = await request("/escalations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            order_id: $("support-id").value.trim(),
+            reason: $("reason").value,
+            customer_message: $("message").value.trim()
+          })
+        });
+        show("support-result",
+          `Ticket: ${result.ticket_id}\n` +
+          `Status: ${result.status}\n${result.message}`
+        );
+      } catch (error) {
+        show("support-result", `Could not create ticket: ${error.message}`);
+      }
+    }
+  </script>
+</body>
+</html>
