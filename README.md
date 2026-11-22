@@ -20,6 +20,8 @@ An AI voice agent that supports three customer workflows:
 
 The initial prototype will support English and Hindi and use synthetic order data.
 
+![VoiceCommerce AI Demo](screenshots/voicecommerce-demo.png)
+
 ## Proposed Technology Stack
 
 - **Voice AI:** ElevenLabs Conversational AI and/or Sarvam Voice Agents.
