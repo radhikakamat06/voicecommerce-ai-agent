@@ -48,12 +48,6 @@ A reliable voice agent could reduce support costs and improve customer experienc
 
 I'll build an illustrative ROI model and distinguish business hypotheses from results measured in the prototype.
 
-## Project Status
-
-**Phase 1: Problem definition and project setup.**
-
-Next: build the backend API, connect a voice agent and evaluate it against a defined set of customer scenarios.
-
 ## About This Project
 
 This is an independent learning and portfolio project using synthetic data. It is not an official product or deployment by ElevenLabs, Sarvam AI or any other technology provider.
